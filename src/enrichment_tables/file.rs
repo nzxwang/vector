@@ -295,19 +295,31 @@ impl File {
     }
 
     /// Does the given row match all the conditions specified?
-    fn row_equals(&self, case: Case, condition: &[Condition], row: &[Value]) -> bool {
+    fn row_equals(&self, case: Case, condition: &[Condition], row: &[Value], wildcard: Option<&String>) -> bool {
         condition.iter().all(|condition| match condition {
             Condition::Equals { field, value } => match self.column_index(field) {
                 None => false,
                 Some(idx) => match (case, &row[idx], value) {
                     (Case::Insensitive, Value::Bytes(bytes1), Value::Bytes(bytes2)) => {
                         match (std::str::from_utf8(bytes1), std::str::from_utf8(bytes2)) {
-                            (Ok(s1), Ok(s2)) => s1.to_lowercase() == s2.to_lowercase(),
+                            (Ok(s1), Ok(s2)) => {
+                                if let Some(wildcard_val) = wildcard {
+                                    s2 == wildcard_val || s1.to_lowercase() == s2.to_lowercase()
+                                } else {
+                                    s1.to_lowercase() == s2.to_lowercase()
+                                }
+                            }
                             (Err(_), Err(_)) => bytes1 == bytes2,
                             _ => false,
                         }
                     }
-                    (_, value1, value2) => value1 == value2,
+                    (_, value1, value2) => {
+                        if let Some(wildcard_val) = wildcard {
+                            value2.to_string() == *wildcard_val || value1 == value2
+                        } else {
+                            value1 == value2
+                        }
+                    }
                 },
             },
             Condition::BetweenDates { field, from, to } => match self.column_index(field) {
@@ -408,12 +420,13 @@ impl File {
         case: Case,
         condition: &'a [Condition<'a>],
         select: Option<&'a [String]>,
+        wildcard: Option<&'a String>,
     ) -> impl Iterator<Item = ObjectMap> + 'a
     where
         I: Iterator<Item = &'a Vec<Value>> + 'a,
     {
         data.filter_map(move |row| {
-            if self.row_equals(case, condition, row) {
+            if self.row_equals(case, condition, row, wildcard) {
                 Some(self.add_columns(select, row))
             } else {
                 None
@@ -492,6 +505,7 @@ impl Table for File {
         case: Case,
         condition: &'a [Condition<'a>],
         select: Option<&'a [String]>,
+        wildcard: Option<&'a [String]>,
         index: Option<IndexHandle>,
     ) -> Result<ObjectMap, String> {
         match index {
