@@ -47,6 +47,7 @@ pub trait Table: DynClone {
         case: Case,
         condition: &'a [Condition<'a>],
         select: Option<&[String]>,
+        wildcard: Option<&String>,
         index: Option<IndexHandle>,
     ) -> Result<ObjectMap, String>;
 
