@@ -505,13 +505,13 @@ impl Table for File {
         case: Case,
         condition: &'a [Condition<'a>],
         select: Option<&'a [String]>,
-        wildcard: Option<&'a [String]>,
+        wildcard: Option<&String>,
         index: Option<IndexHandle>,
     ) -> Result<ObjectMap, String> {
         match index {
             None => {
                 // No index has been passed so we need to do a Sequential Scan.
-                single_or_err(self.sequential(self.data.iter(), case, condition, select))
+                single_or_err(self.sequential(self.data.iter(), case, condition, select, wildcard))
             }
             Some(handle) => {
                 let result = self
@@ -521,7 +521,7 @@ impl Table for File {
                     .map(|idx| &self.data[*idx]);
 
                 // Perform a sequential scan over the indexed result.
-                single_or_err(self.sequential(result, case, condition, select))
+                single_or_err(self.sequential(result, case, condition, select, wildcard))
             }
         }
     }
@@ -531,6 +531,7 @@ impl Table for File {
         case: Case,
         condition: &'a [Condition<'a>],
         select: Option<&'a [String]>,
+        wildcard: Option<&String>,
         index: Option<IndexHandle>,
     ) -> Result<Vec<ObjectMap>, String> {
         match index {
