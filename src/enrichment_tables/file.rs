@@ -538,7 +538,7 @@ impl Table for File {
             None => {
                 // No index has been passed so we need to do a Sequential Scan.
                 Ok(self
-                    .sequential(self.data.iter(), case, condition, select)
+                    .sequential(self.data.iter(), case, condition, select, wildcard)
                     .collect())
             }
             Some(handle) => {
@@ -551,6 +551,7 @@ impl Table for File {
                         case,
                         condition,
                         select,
+                        wildcard,
                     )
                     .collect())
             }
@@ -805,7 +806,7 @@ mod tests {
                 ("field1".into(), Value::from("zirp")),
                 ("field2".into(), Value::from("zurp")),
             ])),
-            file.find_table_row(Case::Sensitive, &[condition], None, None)
+            file.find_table_row(Case::Sensitive, &[condition], None, None, None)
         );
     }
 
@@ -879,7 +880,7 @@ mod tests {
                 ("field1".into(), Value::from("zirp")),
                 ("field2".into(), Value::from("zurp")),
             ])),
-            file.find_table_row(Case::Sensitive, &[condition], None, Some(handle))
+            file.find_table_row(Case::Sensitive, &[condition], None, None, Some(handle))
         );
     }
 
@@ -918,6 +919,7 @@ mod tests {
                     value: Value::from("zip"),
                 }],
                 None,
+                None,
                 Some(handle)
             )
         );
@@ -930,6 +932,7 @@ mod tests {
                     field: "field1",
                     value: Value::from("ZiP"),
                 }],
+                None,
                 None,
                 Some(handle)
             )
@@ -977,6 +980,7 @@ mod tests {
                 Case::Sensitive,
                 &[condition],
                 Some(&["field1".to_string(), "field3".to_string()]),
+                None,
                 Some(handle)
             )
         );
@@ -1017,6 +1021,7 @@ mod tests {
                     value: Value::from("zip"),
                 }],
                 None,
+                None,
                 Some(handle)
             )
         );
@@ -1038,6 +1043,7 @@ mod tests {
                     field: "field1",
                     value: Value::from("ZiP"),
                 }],
+                None,
                 None,
                 Some(handle)
             )
@@ -1107,7 +1113,7 @@ mod tests {
                     )
                 )
             ])),
-            file.find_table_row(Case::Sensitive, &conditions, None, Some(handle))
+            file.find_table_row(Case::Sensitive, &conditions, None, None, Some(handle))
         );
     }
 
@@ -1132,7 +1138,7 @@ mod tests {
 
         assert_eq!(
             Err("no rows found".to_string()),
-            file.find_table_row(Case::Sensitive, &[condition], None, None)
+            file.find_table_row(Case::Sensitive, &[condition], None, None, None)
         );
     }
 
@@ -1159,7 +1165,7 @@ mod tests {
 
         assert_eq!(
             Err("no rows found in index".to_string()),
-            file.find_table_row(Case::Sensitive, &[condition], None, Some(handle))
+            file.find_table_row(Case::Sensitive, &[condition], None, None, Some(handle))
         );
     }
 }
